@@ -5,7 +5,7 @@ name: Deploy to Hetzner Webhosting
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
