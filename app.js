@@ -5,7 +5,6 @@
 
 const DIMENSION_KEYS = ['time', 'agency', 'openness', 'systems', 'concern'];
 
-// Question structure: id, dim, reverse flag. Text comes from I18N per language.
 const QUESTIONS = [
   { id: 't1', dim: 'time' },
   { id: 't2', dim: 'time' },
@@ -41,8 +40,8 @@ const I18N = {
     introHeading: 'How it works',
     introSteps: [
       'Rate each of the 20 statements on a 1–5 scale (Strongly disagree → Strongly agree).',
-      'Some statements are reverse-scored; the app handles that for you.',
-      "You'll get a score for each of the five dimensions and a star diagram of your profile.",
+      'Statements are grouped into five dimensions of futures consciousness.',
+      "You'll get a score for each dimension and a star diagram of your profile.",
     ],
     disclaimer:
       'This is an educational implementation — not a validated psychometric instrument.',
@@ -51,7 +50,7 @@ const I18N = {
     resetBtn: 'Reset',
     submitBtn: 'See my profile',
     progressText: (a, t) => `${a} of ${t} answered`,
-    reverseTag: 'reverse-scored',
+    sectionLabel: (i, n) => `Section ${i} of ${n}`,
     resultsHeading: 'Your futures consciousness profile',
     retakeBtn: 'Retake',
     downloadBtn: 'Download chart (SVG)',
@@ -126,8 +125,8 @@ const I18N = {
     introHeading: 'Slik fungerer det',
     introSteps: [
       'Vurder hver av de 20 påstandene på en skala fra 1 til 5 (Helt uenig → Helt enig).',
-      'Noen påstander er omvendt skåret; appen håndterer dette automatisk.',
-      'Du får en skår for hver av de fem dimensjonene og et stjernediagram over din profil.',
+      'Påstandene er gruppert i fem dimensjoner av fremtidsbevissthet.',
+      'Du får en skår for hver dimensjon og et stjernediagram over din profil.',
     ],
     disclaimer:
       'Dette er en pedagogisk implementasjon — ikke et validert psykometrisk instrument.',
@@ -136,7 +135,7 @@ const I18N = {
     resetBtn: 'Nullstill',
     submitBtn: 'Vis min profil',
     progressText: (a, t) => `${a} av ${t} besvart`,
-    reverseTag: 'omvendt skåring',
+    sectionLabel: (i, n) => `Del ${i} av ${n}`,
     resultsHeading: 'Din profil for fremtidsbevissthet',
     retakeBtn: 'Ta på nytt',
     downloadBtn: 'Last ned diagram (SVG)',
@@ -205,16 +204,51 @@ const I18N = {
   },
 };
 
+const STORAGE_KEY = 'fcs-state-v2';
+
 const STATE = {
   lang: 'en',
-  answers: {}, // id -> 1..5
+  answers: {},
 };
 
 function t() {
   return I18N[STATE.lang];
 }
 
-// ---------- Rendering ----------
+// ---------- Persistence ----------
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.lang && I18N[data.lang]) STATE.lang = data.lang;
+    if (data.answers && typeof data.answers === 'object') {
+      // Filter to valid ids and 1-5 values
+      const known = new Set(QUESTIONS.map(q => q.id));
+      Object.entries(data.answers).forEach(([k, v]) => {
+        if (known.has(k) && Number.isInteger(v) && v >= 1 && v <= 5) {
+          STATE.answers[k] = v;
+        }
+      });
+    }
+  } catch (_) { /* ignore */ }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      lang: STATE.lang,
+      answers: STATE.answers,
+    }));
+  } catch (_) { /* ignore */ }
+}
+
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) { /* ignore */ }
+}
+
+// ---------- Static text ----------
 
 function applyStaticTexts() {
   const L = t();
@@ -243,62 +277,129 @@ function applyStaticTexts() {
   document.getElementById('reference').textContent = L.reference;
 }
 
+// ---------- Questionnaire ----------
+
 function renderQuestions() {
   const L = t();
   const form = document.getElementById('questionsForm');
   form.innerHTML = '';
 
-  QUESTIONS.forEach((q, i) => {
-    const dim = L.dimensions[q.dim];
-    const wrapper = document.createElement('div');
-    wrapper.className = 'question';
+  let questionIndex = 0;
+  DIMENSION_KEYS.forEach((dimKey, dimIndex) => {
+    const dim = L.dimensions[dimKey];
+    const dimQuestions = QUESTIONS.filter(q => q.dim === dimKey);
 
-    const meta = document.createElement('div');
-    meta.className = 'question-meta';
-    meta.textContent = `${i + 1}. ${dim.name}${q.reverse ? ` (${L.reverseTag})` : ''}`;
-    wrapper.appendChild(meta);
+    const section = document.createElement('section');
+    section.className = 'q-section';
 
-    const text = document.createElement('p');
-    text.className = 'question-text';
-    text.textContent = L.items[q.id];
-    wrapper.appendChild(text);
+    const header = document.createElement('div');
+    header.className = 'q-section-header';
 
-    const likert = document.createElement('div');
-    likert.className = 'likert';
-    likert.setAttribute('role', 'radiogroup');
-    likert.setAttribute('aria-label', L.items[q.id]);
+    const tag = document.createElement('span');
+    tag.className = 'q-section-tag';
+    tag.textContent = L.sectionLabel(dimIndex + 1, DIMENSION_KEYS.length);
 
-    for (let v = 1; v <= 5; v++) {
-      const label = document.createElement('label');
-      const input = document.createElement('input');
-      input.type = 'radio';
-      input.name = q.id;
-      input.value = String(v);
-      if (STATE.answers[q.id] === v) input.checked = true;
-      input.addEventListener('change', () => {
-        STATE.answers[q.id] = v;
-        updateProgress();
-      });
+    const title = document.createElement('h3');
+    title.className = 'q-section-title';
+    title.textContent = dim.name;
 
-      const num = document.createElement('span');
-      num.className = 'num';
-      num.textContent = String(v);
+    const desc = document.createElement('p');
+    desc.className = 'q-section-desc';
+    desc.textContent = dim.description;
 
-      const txt = document.createElement('span');
-      txt.className = 'value';
-      txt.textContent = L.likert[v - 1];
+    header.appendChild(tag);
+    header.appendChild(title);
+    header.appendChild(desc);
+    section.appendChild(header);
 
-      label.appendChild(input);
-      label.appendChild(num);
-      label.appendChild(txt);
-      likert.appendChild(label);
-    }
+    dimQuestions.forEach(q => {
+      questionIndex += 1;
+      section.appendChild(renderQuestion(q, questionIndex, L));
+    });
 
-    wrapper.appendChild(likert);
-    form.appendChild(wrapper);
+    form.appendChild(section);
   });
 
   updateProgress();
+}
+
+function renderQuestion(q, index, L) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'question';
+
+  const top = document.createElement('div');
+  top.className = 'question-top';
+
+  const num = document.createElement('span');
+  num.className = 'question-num';
+  num.textContent = String(index).padStart(2, '0');
+
+  const text = document.createElement('p');
+  text.className = 'question-text';
+  text.textContent = L.items[q.id];
+
+  top.appendChild(num);
+  top.appendChild(text);
+  wrapper.appendChild(top);
+
+  const likert = document.createElement('div');
+  likert.className = 'likert';
+  likert.setAttribute('role', 'radiogroup');
+  likert.setAttribute('aria-label', L.items[q.id]);
+
+  const track = document.createElement('div');
+  track.className = 'likert-track';
+
+  // Connecting line under the dots
+  const line = document.createElement('div');
+  line.className = 'likert-line';
+  track.appendChild(line);
+
+  for (let v = 1; v <= 5; v++) {
+    const label = document.createElement('label');
+    label.className = 'likert-dot';
+    label.title = L.likert[v - 1];
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = q.id;
+    input.value = String(v);
+    input.setAttribute('aria-label', `${v} – ${L.likert[v - 1]}`);
+    if (STATE.answers[q.id] === v) input.checked = true;
+    input.addEventListener('change', () => {
+      STATE.answers[q.id] = v;
+      saveState();
+      updateProgress();
+      // Update visual state for siblings
+      const dots = label.parentElement.querySelectorAll('.likert-dot');
+      dots.forEach((d, i) => d.classList.toggle('checked', i + 1 === v));
+    });
+
+    const circle = document.createElement('span');
+    circle.className = 'dot';
+    circle.setAttribute('aria-hidden', 'true');
+    circle.textContent = String(v);
+
+    label.appendChild(input);
+    label.appendChild(circle);
+    if (STATE.answers[q.id] === v) label.classList.add('checked');
+    track.appendChild(label);
+  }
+
+  const labels = document.createElement('div');
+  labels.className = 'likert-endpoints';
+  const left = document.createElement('span');
+  left.textContent = L.likert[0];
+  const right = document.createElement('span');
+  right.textContent = L.likert[4];
+  labels.appendChild(left);
+  labels.appendChild(right);
+
+  likert.appendChild(track);
+  likert.appendChild(labels);
+  wrapper.appendChild(likert);
+
+  return wrapper;
 }
 
 function updateProgress() {
@@ -336,84 +437,90 @@ function computeScores() {
   }));
 }
 
-// ---------- Radar chart (SVG) ----------
+// ---------- Star chart (SVG) ----------
+
+const NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(name, attrs = {}) {
+  const el = document.createElementNS(NS, name);
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  return el;
+}
 
 function renderRadar(scores) {
   const svg = document.getElementById('radarChart');
   svg.innerHTML = '';
 
-  const NS = 'http://www.w3.org/2000/svg';
-  const RADIUS = 160;
+  const R = 160;
   const LEVELS = 5;
+  const INNER_RATIO = 0.382; // golden ratio for a regular 5-pointed star
   const n = scores.length;
 
-  const defs = document.createElementNS(NS, 'defs');
-  const grad = document.createElementNS(NS, 'radialGradient');
-  grad.setAttribute('id', 'radarGradient');
-  grad.setAttribute('cx', '50%');
-  grad.setAttribute('cy', '50%');
-  grad.setAttribute('r', '50%');
-  const stop1 = document.createElementNS(NS, 'stop');
-  stop1.setAttribute('offset', '0%');
-  stop1.setAttribute('stop-color', '#a78bfa');
-  stop1.setAttribute('stop-opacity', '0.9');
-  const stop2 = document.createElementNS(NS, 'stop');
-  stop2.setAttribute('offset', '100%');
-  stop2.setAttribute('stop-color', '#38bdf8');
-  stop2.setAttribute('stop-opacity', '0.4');
-  grad.appendChild(stop1);
-  grad.appendChild(stop2);
+  const outerAngle = i => -Math.PI / 2 + (i * 2 * Math.PI) / n;
+  const innerAngle = i => -Math.PI / 2 + ((i + 0.5) * 2 * Math.PI) / n;
+
+  // Defs: gradient + glow filter
+  const defs = svgEl('defs');
+  const grad = svgEl('radialGradient', { id: 'starGradient', cx: '50%', cy: '50%', r: '60%' });
+  grad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': '#fde68a', 'stop-opacity': '0.95' }));
+  grad.appendChild(svgEl('stop', { offset: '55%', 'stop-color': '#a78bfa', 'stop-opacity': '0.7' }));
+  grad.appendChild(svgEl('stop', { offset: '100%', 'stop-color': '#38bdf8', 'stop-opacity': '0.35' }));
   defs.appendChild(grad);
+
+  const filter = svgEl('filter', { id: 'starGlow', x: '-30%', y: '-30%', width: '160%', height: '160%' });
+  filter.appendChild(svgEl('feGaussianBlur', { stdDeviation: '4', result: 'blur' }));
+  const merge = svgEl('feMerge');
+  merge.appendChild(svgEl('feMergeNode', { in: 'blur' }));
+  merge.appendChild(svgEl('feMergeNode', { in: 'SourceGraphic' }));
+  filter.appendChild(merge);
+  defs.appendChild(filter);
+
   svg.appendChild(defs);
 
-  const angleFor = i => -Math.PI / 2 + (i * 2 * Math.PI) / n;
-
+  // Concentric pentagon grid at each Likert level
   for (let level = 1; level <= LEVELS; level++) {
-    const r = (RADIUS * level) / LEVELS;
-    const points = [];
+    const r = (R * level) / LEVELS;
+    const pts = [];
     for (let i = 0; i < n; i++) {
-      const a = angleFor(i);
-      points.push(`${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`);
+      const a = outerAngle(i);
+      pts.push(`${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`);
     }
-    const poly = document.createElementNS(NS, 'polygon');
-    poly.setAttribute('points', points.join(' '));
-    poly.setAttribute('class', 'radar-grid');
-    svg.appendChild(poly);
+    svg.appendChild(svgEl('polygon', { points: pts.join(' '), class: 'radar-grid' }));
   }
 
+  // Radial axes
   for (let i = 0; i < n; i++) {
-    const a = angleFor(i);
-    const x = RADIUS * Math.cos(a);
-    const y = RADIUS * Math.sin(a);
-    const line = document.createElementNS(NS, 'line');
-    line.setAttribute('x1', '0');
-    line.setAttribute('y1', '0');
-    line.setAttribute('x2', x.toFixed(2));
-    line.setAttribute('y2', y.toFixed(2));
-    line.setAttribute('class', 'radar-axis');
-    svg.appendChild(line);
+    const a = outerAngle(i);
+    svg.appendChild(svgEl('line', {
+      x1: 0, y1: 0,
+      x2: (R * Math.cos(a)).toFixed(2),
+      y2: (R * Math.sin(a)).toFixed(2),
+      class: 'radar-axis',
+    }));
   }
 
+  // Tick numbers along top axis
   for (let level = 1; level <= LEVELS; level++) {
-    const y = -(RADIUS * level) / LEVELS;
-    const tx = document.createElementNS(NS, 'text');
-    tx.setAttribute('x', '6');
-    tx.setAttribute('y', y.toFixed(2));
-    tx.setAttribute('class', 'radar-tick-label');
-    tx.setAttribute('text-anchor', 'start');
+    const y = -(R * level) / LEVELS;
+    const tx = svgEl('text', {
+      x: 6, y: y.toFixed(2),
+      class: 'radar-tick-label',
+      'text-anchor': 'start',
+    });
     tx.textContent = String(level);
     svg.appendChild(tx);
   }
 
+  // Axis labels (dimension short names)
   for (let i = 0; i < n; i++) {
-    const a = angleFor(i);
-    const labelR = RADIUS + 28;
+    const a = outerAngle(i);
+    const labelR = R + 30;
     const x = labelR * Math.cos(a);
     const y = labelR * Math.sin(a);
-    const tx = document.createElementNS(NS, 'text');
-    tx.setAttribute('x', x.toFixed(2));
-    tx.setAttribute('y', y.toFixed(2));
-    tx.setAttribute('class', 'radar-axis-label');
+    const tx = svgEl('text', {
+      x: x.toFixed(2), y: y.toFixed(2),
+      class: 'radar-axis-label',
+    });
     if (x > 5) tx.setAttribute('text-anchor', 'start');
     else if (x < -5) tx.setAttribute('text-anchor', 'end');
     else tx.setAttribute('text-anchor', 'middle');
@@ -421,28 +528,41 @@ function renderRadar(scores) {
     svg.appendChild(tx);
   }
 
-  const dataPoints = [];
-  const pointCoords = [];
+  // Data: real 5-pointed star. 10 vertices alternating outer (tip = score) / inner notch.
+  // Inner notch scales with average of neighboring scores so the shape stays coherent.
+  const starPts = [];
+  const outerCoords = [];
   for (let i = 0; i < n; i++) {
-    const a = angleFor(i);
-    const r = (RADIUS * scores[i].mean) / LEVELS;
-    const x = r * Math.cos(a);
-    const y = r * Math.sin(a);
-    dataPoints.push(`${x.toFixed(2)},${y.toFixed(2)}`);
-    pointCoords.push({ x, y });
-  }
-  const dataPoly = document.createElementNS(NS, 'polygon');
-  dataPoly.setAttribute('points', dataPoints.join(' '));
-  dataPoly.setAttribute('class', 'radar-polygon');
-  svg.appendChild(dataPoly);
+    const oa = outerAngle(i);
+    const oScore = scores[i].mean;
+    const oR = (R * oScore) / LEVELS;
+    const ox = oR * Math.cos(oa);
+    const oy = oR * Math.sin(oa);
+    starPts.push(`${ox.toFixed(2)},${oy.toFixed(2)}`);
+    outerCoords.push({ x: ox, y: oy });
 
-  pointCoords.forEach(p => {
-    const c = document.createElementNS(NS, 'circle');
-    c.setAttribute('cx', p.x.toFixed(2));
-    c.setAttribute('cy', p.y.toFixed(2));
-    c.setAttribute('r', '4');
-    c.setAttribute('class', 'radar-point');
-    svg.appendChild(c);
+    const ia = innerAngle(i);
+    const neighborAvg = (scores[i].mean + scores[(i + 1) % n].mean) / 2;
+    const iR = (R * neighborAvg) / LEVELS * INNER_RATIO;
+    const ix = iR * Math.cos(ia);
+    const iy = iR * Math.sin(ia);
+    starPts.push(`${ix.toFixed(2)},${iy.toFixed(2)}`);
+  }
+
+  svg.appendChild(svgEl('polygon', {
+    points: starPts.join(' '),
+    class: 'radar-polygon',
+    filter: 'url(#starGlow)',
+  }));
+
+  // Tips emphasized as small markers
+  outerCoords.forEach(p => {
+    svg.appendChild(svgEl('circle', {
+      cx: p.x.toFixed(2),
+      cy: p.y.toFixed(2),
+      r: 4.5,
+      class: 'radar-point',
+    }));
   });
 }
 
@@ -521,6 +641,8 @@ function submitQuestionnaire() {
 
 function reset() {
   STATE.answers = {};
+  clearState();
+  saveState();
   renderQuestions();
 }
 
@@ -533,6 +655,7 @@ function retake() {
 function setLang(lang) {
   if (!I18N[lang] || STATE.lang === lang) return;
   STATE.lang = lang;
+  saveState();
   document.querySelectorAll('.lang-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === lang);
   });
@@ -544,25 +667,21 @@ function setLang(lang) {
 function downloadChart() {
   const svg = document.getElementById('radarChart');
   const clone = svg.cloneNode(true);
-  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  clone.setAttribute('xmlns', NS);
+
+  const style = svgEl('style');
   style.textContent = `
     .radar-grid { fill: none; stroke: #cbd5e1; stroke-width: 1; }
     .radar-axis { stroke: #cbd5e1; stroke-width: 1; }
     .radar-axis-label { fill: #0f172a; font-family: sans-serif; font-size: 13px; font-weight: 600; }
     .radar-tick-label { fill: #64748b; font-family: sans-serif; font-size: 10px; }
-    .radar-polygon { fill: rgba(167,139,250,0.45); stroke: #38bdf8; stroke-width: 2; stroke-linejoin: round; }
-    .radar-point { fill: #a78bfa; stroke: #fff; stroke-width: 1.5; }
+    .radar-polygon { fill: url(#starGradient); fill-opacity: 0.85; stroke: #6d28d9; stroke-width: 2; stroke-linejoin: round; }
+    .radar-point { fill: #fde68a; stroke: #6d28d9; stroke-width: 1.5; }
     text { dominant-baseline: middle; }
   `;
   clone.insertBefore(style, clone.firstChild);
 
-  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  bg.setAttribute('x', '-220');
-  bg.setAttribute('y', '-220');
-  bg.setAttribute('width', '440');
-  bg.setAttribute('height', '440');
-  bg.setAttribute('fill', '#ffffff');
+  const bg = svgEl('rect', { x: -220, y: -220, width: 440, height: 440, fill: '#ffffff' });
   clone.insertBefore(bg, clone.firstChild);
 
   const data = new XMLSerializer().serializeToString(clone);
@@ -588,5 +707,12 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
   btn.addEventListener('click', () => setLang(btn.dataset.lang));
 });
 
-// Initial paint
+loadState();
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.lang === STATE.lang);
+});
 applyStaticTexts();
+// If the user had answers saved, jump straight to the questionnaire
+if (Object.keys(STATE.answers).length > 0) {
+  startQuestionnaire();
+}

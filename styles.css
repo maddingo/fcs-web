@@ -74,20 +74,18 @@ header h1 {
   color: #0b1220;
 }
 
-.lang-btn:hover:not(.active) {
-  color: var(--text);
+.lang-btn:hover:not(.active) { color: var(--text); }
+
+.subtitle {
+  color: var(--muted);
+  max-width: 60ch;
+  margin: 0 0 2rem;
 }
 
 .ref {
   color: var(--muted);
   font-size: 0.85rem;
   margin-top: -0.25rem;
-}
-
-.subtitle {
-  color: var(--muted);
-  max-width: 60ch;
-  margin: 0 0 2rem;
 }
 
 .card {
@@ -99,10 +97,7 @@ header h1 {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
-.card h2 {
-  margin-top: 0;
-  font-size: 1.25rem;
-}
+.card h2 { margin-top: 0; font-size: 1.25rem; }
 
 .hidden { display: none; }
 
@@ -145,7 +140,7 @@ button.primary {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .progress-bar {
@@ -169,68 +164,164 @@ button.primary {
   white-space: nowrap;
 }
 
-.question {
+/* Section grouping */
+.q-section {
   border-top: 1px solid var(--border);
-  padding: 1rem 0;
+  padding: 1.75rem 0 0.5rem;
+  margin-top: 1rem;
 }
-.question:first-child { border-top: none; padding-top: 0; }
-
-.question-text {
-  margin: 0 0 0.6rem;
-  font-size: 1rem;
+.q-section:first-child {
+  border-top: none;
+  padding-top: 0.5rem;
+  margin-top: 0;
 }
 
-.question-meta {
-  color: var(--muted);
-  font-size: 0.8rem;
+.q-section-header {
+  margin-bottom: 1.25rem;
+}
+
+.q-section-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.4rem;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 99px;
+  background: rgba(56, 189, 248, 0.08);
 }
 
-.likert {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem;
-}
-
-.likert label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0.6rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel-2);
-  cursor: pointer;
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-align: center;
-  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
-}
-
-.likert label:hover { border-color: var(--accent); }
-
-.likert input { position: absolute; opacity: 0; pointer-events: none; }
-
-.likert input:checked + .value {
+.q-section-title {
+  margin: 0.6rem 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
-.likert label:has(input:checked) {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(167, 139, 250, 0.15));
+.q-section-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  max-width: 60ch;
+}
+
+/* Individual question */
+.question {
+  padding: 1rem 0 1.25rem;
+  border-top: 1px solid rgba(51, 65, 85, 0.6);
+}
+.q-section .question:first-of-type { border-top: none; padding-top: 0.25rem; }
+
+.question-top {
+  display: flex;
+  gap: 0.85rem;
+  align-items: baseline;
+  margin-bottom: 0.85rem;
+}
+
+.question-num {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 1.75rem;
+}
+
+.question-text {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+/* Horizontal Likert scale */
+.likert {
+  padding-left: 2.6rem;
+}
+
+.likert-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  height: 44px;
+}
+
+.likert-line {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 50%;
+  height: 2px;
+  background: var(--panel-2);
+  border-radius: 2px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.likert-dot {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.likert-dot input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.likert-dot .dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.likert-dot:hover .dot {
   border-color: var(--accent);
   color: var(--text);
 }
 
-.likert .num {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--text);
+.likert-dot input:focus-visible + .dot {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
+.likert-dot.checked .dot,
+.likert-dot:has(input:checked) .dot {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: #0b1220;
+  transform: scale(1.12);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15), 0 6px 16px rgba(167, 139, 250, 0.35);
+}
+
+.likert-endpoints {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Results */
 .results-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -240,8 +331,10 @@ button.primary {
 
 @media (max-width: 720px) {
   .results-grid { grid-template-columns: 1fr; }
-  .likert { grid-template-columns: repeat(5, 1fr); }
-  .likert label { font-size: 0.7rem; padding: 0.5rem 0.2rem; }
+  .likert { padding-left: 0; }
+  .likert-dot .dot { width: 28px; height: 28px; font-size: 0.78rem; }
+  .question-top { gap: 0.6rem; }
+  .question-num { min-width: 1.4rem; }
 }
 
 .chart-wrapper {
@@ -252,20 +345,20 @@ button.primary {
 
 #radarChart {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   height: auto;
 }
 
 .scores {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .score-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.5rem 1rem;
+  gap: 0.4rem 1rem;
   align-items: center;
 }
 
@@ -319,7 +412,7 @@ footer {
   text-align: center;
 }
 
-/* Radar chart styling */
+/* Star chart styling */
 .radar-grid {
   fill: none;
   stroke: var(--border);
@@ -328,6 +421,8 @@ footer {
 .radar-axis {
   stroke: var(--border);
   stroke-width: 1;
+  stroke-dasharray: 2 4;
+  opacity: 0.7;
 }
 .radar-axis-label {
   fill: var(--text);
@@ -342,14 +437,14 @@ footer {
   text-anchor: middle;
 }
 .radar-polygon {
-  fill: url(#radarGradient);
-  fill-opacity: 0.45;
-  stroke: var(--accent);
+  fill: url(#starGradient);
+  fill-opacity: 0.85;
+  stroke: #c4b5fd;
   stroke-width: 2;
   stroke-linejoin: round;
 }
 .radar-point {
-  fill: var(--accent-2);
-  stroke: #fff;
+  fill: #fde68a;
+  stroke: #1e293b;
   stroke-width: 1.5;
 }
