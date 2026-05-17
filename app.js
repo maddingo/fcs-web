@@ -56,6 +56,8 @@ const I18N = {
     downloadBtn: 'Download chart (SVG)',
     reference:
       'Lalot, F., Ahvenharju, S., & Minkkinen, M. (2021). Aware of the future? Development and validation of the Futures Consciousness Scale.',
+    privacyText:
+      'Your answers stay on this device — nothing is sent to a server, and there is no tracking or analytics. They are saved in your browser only, so you can continue later. Choosing Reset or Retake clears them.',
     aboutSummary: 'About the scale',
     aboutBody:
       'The Futures Consciousness Scale was developed by Ahvenharju, Minkkinen and Lauttamäki (2018) and refined by Lalot, Ahvenharju and Minkkinen (2021). It identifies five learnable competencies for thinking about and acting toward the future: time perspective, agency beliefs, openness to alternatives, systems perception and concern for others. Higher scores indicate greater futures consciousness across these dimensions, which is associated with long-term planning, sustainable behavior and adaptive decision-making.',
@@ -145,6 +147,8 @@ const I18N = {
     downloadBtn: 'Last ned diagram (SVG)',
     reference:
       'Lalot, F., Ahvenharju, S., & Minkkinen, M. (2021). Aware of the future? Development and validation of the Futures Consciousness Scale.',
+    privacyText:
+      'Svarene dine lagres kun på denne enheten — ingenting sendes til en server, og det er ingen sporing eller analyse. De lagres bare i nettleseren din, slik at du kan fortsette senere. Velger du Nullstill eller Ta på nytt, slettes de.',
     aboutSummary: 'Om skalaen',
     aboutBody:
       'Skalaen for fremtidsbevissthet ble utviklet av Ahvenharju, Minkkinen og Lauttamäki (2018) og videreutviklet av Lalot, Ahvenharju og Minkkinen (2021). Den identifiserer fem lærbare kompetanser for å tenke om og handle med tanke på fremtiden: tidsperspektiv, tro på egen påvirkningskraft, åpenhet for alternativer, systemforståelse og omtanke for andre. Høyere skår indikerer større fremtidsbevissthet på tvers av disse dimensjonene, noe som er forbundet med langsiktig planlegging, bærekraftig atferd og adaptive beslutninger.',
@@ -285,6 +289,7 @@ function applyStaticTexts() {
   document.getElementById('reference').textContent = L.reference;
   document.getElementById('aboutSummary').textContent = L.aboutSummary;
   document.getElementById('aboutBody').textContent = L.aboutBody;
+  document.getElementById('privacyText').textContent = L.privacyText;
 
   // Render the keyboard hint with styled <kbd> chips, building from a template
   // so we don't have to inject raw HTML from translation strings.

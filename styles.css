@@ -113,6 +113,28 @@ header h1 {
   margin-top: -0.25rem;
 }
 
+.privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.85rem 0 0;
+  padding: 0.75rem 0.9rem;
+  background: rgba(52, 211, 153, 0.06);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 10px;
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  max-width: 65ch;
+}
+
+.privacy-icon {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--good);
+  margin-top: 0.1rem;
+}
+
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
