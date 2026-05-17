@@ -49,6 +49,34 @@ Plain HTML, CSS, and JavaScript. No framework, no dependencies, no backend. Font
 - `styles.css` — styling
 - `app.js` — questionnaire logic, scoring, star chart, i18n
 
+## Deployment
+
+Pushing to `main` deploys to a Hetzner Webhosting account via the GitHub Action in `.github/workflows/deploy.yml`. The action syncs files over SSH with rsync.
+
+**One-time setup:**
+
+1. Generate an SSH keypair locally:
+
+   ```sh
+   ssh-keygen -t ed25519 -f deploy-key -C "github-actions"
+   ```
+
+2. In **konsoleH** (Hetzner's admin panel) → *WWW* / *SSH* — add the contents of `deploy-key.pub` to the account's authorised keys.
+
+3. In your GitHub repo → *Settings* → *Secrets and variables* → *Actions*, add:
+
+   | Secret | Value |
+   |---|---|
+   | `SSH_HOST` | e.g. `wwwXX.your-server.de` (from konsoleH) |
+   | `SSH_USER` | your Hetzner Webhosting username |
+   | `SSH_PORT` | `22` (or as configured) |
+   | `SSH_PRIVATE_KEY` | contents of the private key file `deploy-key` |
+   | `REMOTE_PATH` | usually `/public_html/` or `~/public_html/` |
+
+4. Push to `main` (or run the workflow manually from the **Actions** tab).
+
+The deploy uses `rsync --delete`, so anything in `REMOTE_PATH` that isn't in the repo will be removed. Adjust the `EXCLUDE` list in `deploy.yml` if you want to keep server-side files (e.g. `.htaccess`).
+
 ## Reference
 
 Lalot, F., Ahvenharju, S., & Minkkinen, M. (2021). *Aware of the future? Development and validation of the Futures Consciousness Scale.*

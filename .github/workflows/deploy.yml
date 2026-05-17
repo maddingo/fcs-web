@@ -1,0 +1,36 @@
+name: Deploy to Hetzner Webhosting
+
+# Publishes the static files to a Hetzner Webhosting account over SFTP/SSH.
+# Runs on every push to main and can also be triggered manually from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Sync via SSH
+    runs-on: ubuntu-latest
+    environment: hetzner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via rsync over SSH
+        uses: easingthemes/ssh-deploy@v5
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PORT: ${{ secrets.SSH_PORT }}
+          TARGET: ${{ secrets.REMOTE_PATH }}
+          # -r recursive, -l symlinks, -t times, -v verbose, -z compress, -O omit-dir-times
+          # --delete removes files on the server that no longer exist in the repo
+          ARGS: "-rltvzO --delete"
+          EXCLUDE: ".git/, .github/, README.md, .gitignore, .DS_Store"
+          SOURCE: "./"
