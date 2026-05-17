@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Futures Consciousness Scale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -24,6 +27,10 @@
       <ol id="introSteps"></ol>
       <p class="disclaimer" id="disclaimer"></p>
       <p class="ref" id="version"></p>
+      <details class="about">
+        <summary id="aboutSummary"></summary>
+        <p id="aboutBody"></p>
+      </details>
       <div class="actions">
         <button id="startBtn" class="primary"></button>
       </div>
@@ -31,9 +38,10 @@
 
     <section id="questionnaire" class="card hidden">
       <div class="progress">
-        <div class="progress-bar"><div id="progressFill"></div></div>
+        <div class="progress-segments" id="progressSegments"></div>
         <span id="progressText"></span>
       </div>
+      <p class="kbd-hint" id="kbdHint"></p>
       <form id="questionsForm"></form>
       <div class="actions">
         <button id="resetBtn" type="button"></button>
@@ -45,7 +53,7 @@
       <h2 id="resultsHeading"></h2>
       <div class="results-grid">
         <div class="chart-wrapper">
-          <svg id="radarChart" viewBox="-220 -220 440 440" aria-label="Star diagram"></svg>
+          <svg id="radarChart" viewBox="-270 -270 540 540" aria-label="Star diagram"></svg>
         </div>
         <div id="scoresList" class="scores"></div>
       </div>

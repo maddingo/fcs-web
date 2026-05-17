@@ -56,6 +56,10 @@ const I18N = {
     downloadBtn: 'Download chart (SVG)',
     reference:
       'Lalot, F., Ahvenharju, S., & Minkkinen, M. (2021). Aware of the future? Development and validation of the Futures Consciousness Scale.',
+    aboutSummary: 'About the scale',
+    aboutBody:
+      'The Futures Consciousness Scale was developed by Ahvenharju, Minkkinen and Lauttamäki (2018) and refined by Lalot, Ahvenharju and Minkkinen (2021). It identifies five learnable competencies for thinking about and acting toward the future: time perspective, agency beliefs, openness to alternatives, systems perception and concern for others. Higher scores indicate greater futures consciousness across these dimensions, which is associated with long-term planning, sustainable behavior and adaptive decision-making.',
+    kbdHint: 'Tip — answer with the keyboard: press 1–5 to choose, or use ← → to move between options.',
     likert: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
     score: (v) => `${v} / 5`,
     dimensions: {
@@ -141,6 +145,10 @@ const I18N = {
     downloadBtn: 'Last ned diagram (SVG)',
     reference:
       'Lalot, F., Ahvenharju, S., & Minkkinen, M. (2021). Aware of the future? Development and validation of the Futures Consciousness Scale.',
+    aboutSummary: 'Om skalaen',
+    aboutBody:
+      'Skalaen for fremtidsbevissthet ble utviklet av Ahvenharju, Minkkinen og Lauttamäki (2018) og videreutviklet av Lalot, Ahvenharju og Minkkinen (2021). Den identifiserer fem lærbare kompetanser for å tenke om og handle med tanke på fremtiden: tidsperspektiv, tro på egen påvirkningskraft, åpenhet for alternativer, systemforståelse og omtanke for andre. Høyere skår indikerer større fremtidsbevissthet på tvers av disse dimensjonene, noe som er forbundet med langsiktig planlegging, bærekraftig atferd og adaptive beslutninger.',
+    kbdHint: 'Tips — svar med tastatur: trykk 1–5 for å velge, eller bruk ← → for å bla mellom alternativer.',
     likert: ['Helt uenig', 'Uenig', 'Nøytral', 'Enig', 'Helt enig'],
     score: (v) => `${v} / 5`,
     dimensions: {
@@ -275,6 +283,70 @@ function applyStaticTexts() {
   document.getElementById('retakeBtn').textContent = L.retakeBtn;
   document.getElementById('downloadBtn').textContent = L.downloadBtn;
   document.getElementById('reference').textContent = L.reference;
+  document.getElementById('aboutSummary').textContent = L.aboutSummary;
+  document.getElementById('aboutBody').textContent = L.aboutBody;
+
+  // Render the keyboard hint with styled <kbd> chips, building from a template
+  // so we don't have to inject raw HTML from translation strings.
+  const hint = document.getElementById('kbdHint');
+  hint.innerHTML = '';
+  // Split on the literal tokens "1–5" and "← →" and wrap them in <kbd> chips
+  const tokens = [['1–5', ['1', '–', '5']], ['← →', ['←', '→']]];
+  let remaining = L.kbdHint;
+  const frag = document.createDocumentFragment();
+  while (remaining.length > 0) {
+    let nextIdx = -1;
+    let nextToken = null;
+    for (const [tok] of tokens) {
+      const idx = remaining.indexOf(tok);
+      if (idx !== -1 && (nextIdx === -1 || idx < nextIdx)) {
+        nextIdx = idx;
+        nextToken = tok;
+      }
+    }
+    if (nextIdx === -1) {
+      frag.appendChild(document.createTextNode(remaining));
+      break;
+    }
+    if (nextIdx > 0) {
+      frag.appendChild(document.createTextNode(remaining.slice(0, nextIdx)));
+    }
+    const tokenSpec = tokens.find(([t]) => t === nextToken);
+    const wrap = document.createElement('span');
+    wrap.className = 'kbd-group';
+    tokenSpec[1].forEach((ch, i) => {
+      if (ch === '–') {
+        wrap.appendChild(document.createTextNode(' – '));
+      } else {
+        const k = document.createElement('kbd');
+        k.textContent = ch;
+        wrap.appendChild(k);
+        if (i < tokenSpec[1].length - 1 && tokenSpec[1][i + 1] !== '–') {
+          wrap.appendChild(document.createTextNode(' '));
+        }
+      }
+    });
+    frag.appendChild(wrap);
+    remaining = remaining.slice(nextIdx + nextToken.length);
+  }
+  hint.appendChild(frag);
+}
+
+// ---------- Progress segments ----------
+
+function renderProgressSegments() {
+  const container = document.getElementById('progressSegments');
+  if (!container || container.childElementCount === DIMENSION_KEYS.length) return;
+  container.innerHTML = '';
+  DIMENSION_KEYS.forEach(k => {
+    const seg = document.createElement('div');
+    seg.className = 'progress-segment';
+    seg.dataset.dim = k;
+    const fill = document.createElement('div');
+    fill.className = 'progress-segment-fill';
+    seg.appendChild(fill);
+    container.appendChild(seg);
+  });
 }
 
 // ---------- Questionnaire ----------
@@ -406,10 +478,19 @@ function updateProgress() {
   const L = t();
   const total = QUESTIONS.length;
   const answered = Object.keys(STATE.answers).length;
-  const pct = (answered / total) * 100;
-  document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressText').textContent = L.progressText(answered, total);
   document.getElementById('submitBtn').disabled = answered < total;
+
+  DIMENSION_KEYS.forEach(k => {
+    const dimQs = QUESTIONS.filter(q => q.dim === k);
+    const dimAnswered = dimQs.filter(q => STATE.answers[q.id] != null).length;
+    const pct = (dimAnswered / dimQs.length) * 100;
+    const seg = document.querySelector(`.progress-segment[data-dim="${k}"]`);
+    if (!seg) return;
+    seg.classList.toggle('complete', dimAnswered === dimQs.length);
+    const fill = seg.querySelector('.progress-segment-fill');
+    if (fill) fill.style.width = pct + '%';
+  });
 }
 
 // ---------- Scoring ----------
@@ -511,10 +592,10 @@ function renderRadar(scores) {
     svg.appendChild(tx);
   }
 
-  // Axis labels (dimension short names)
+  // Axis labels (dimension short names) — pushed further out so viewBox padding handles the longest words
   for (let i = 0; i < n; i++) {
     const a = outerAngle(i);
-    const labelR = R + 30;
+    const labelR = R + 38;
     const x = labelR * Math.cos(a);
     const y = labelR * Math.sin(a);
     const tx = svgEl('text', {
@@ -673,15 +754,15 @@ function downloadChart() {
   style.textContent = `
     .radar-grid { fill: none; stroke: #cbd5e1; stroke-width: 1; }
     .radar-axis { stroke: #cbd5e1; stroke-width: 1; }
-    .radar-axis-label { fill: #0f172a; font-family: sans-serif; font-size: 13px; font-weight: 600; }
-    .radar-tick-label { fill: #64748b; font-family: sans-serif; font-size: 10px; }
+    .radar-axis-label { fill: #0f172a; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; }
+    .radar-tick-label { fill: #64748b; font-family: 'Space Grotesk', sans-serif; font-size: 10px; }
     .radar-polygon { fill: url(#starGradient); fill-opacity: 0.85; stroke: #6d28d9; stroke-width: 2; stroke-linejoin: round; }
     .radar-point { fill: #fde68a; stroke: #6d28d9; stroke-width: 1.5; }
     text { dominant-baseline: middle; }
   `;
   clone.insertBefore(style, clone.firstChild);
 
-  const bg = svgEl('rect', { x: -220, y: -220, width: 440, height: 440, fill: '#ffffff' });
+  const bg = svgEl('rect', { x: -270, y: -270, width: 540, height: 540, fill: '#ffffff' });
   clone.insertBefore(bg, clone.firstChild);
 
   const data = new XMLSerializer().serializeToString(clone);
@@ -696,8 +777,73 @@ function downloadChart() {
   URL.revokeObjectURL(url);
 }
 
+// ---------- Starfield ----------
+
+function mulberry32(seed) {
+  let s = seed | 0;
+  return function () {
+    s = (s + 0x6D2B79F5) | 0;
+    let x = Math.imul(s ^ (s >>> 15), 1 | s);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function renderStarfield() {
+  if (document.querySelector('.starfield')) return;
+  const container = document.createElement('div');
+  container.className = 'starfield';
+  container.setAttribute('aria-hidden', 'true');
+
+  const svg = svgEl('svg', {
+    xmlns: NS,
+    viewBox: '0 0 1000 1000',
+    preserveAspectRatio: 'xMidYMid slice',
+  });
+
+  const rng = mulberry32(20260517);
+  const numStars = 140;
+  for (let i = 0; i < numStars; i++) {
+    const x = rng() * 1000;
+    const y = rng() * 1000;
+    const r = (0.3 + rng() * 1.4).toFixed(2);
+    const opacity = (0.25 + rng() * 0.7).toFixed(2);
+    // Occasional warm star
+    const fill = rng() < 0.08 ? '#fde68a' : (rng() < 0.15 ? '#c4b5fd' : '#e2e8f0');
+    svg.appendChild(svgEl('circle', {
+      cx: x.toFixed(1),
+      cy: y.toFixed(1),
+      r,
+      fill,
+      opacity,
+    }));
+  }
+  container.appendChild(svg);
+  document.body.prepend(container);
+}
+
+// ---------- Keyboard support on Likert ----------
+
+function handleLikertKeydown(e) {
+  if (e.key < '1' || e.key > '5') return;
+  const likert = e.target.closest('.likert');
+  if (!likert) return;
+  const v = parseInt(e.key, 10);
+  const inputs = likert.querySelectorAll('input[type="radio"]');
+  const target = inputs[v - 1];
+  if (!target) return;
+  target.checked = true;
+  target.dispatchEvent(new Event('change', { bubbles: true }));
+  target.focus();
+  e.preventDefault();
+}
+
 // ---------- Init ----------
 
+renderStarfield();
+renderProgressSegments();
+
+document.getElementById('questionsForm').addEventListener('keydown', handleLikertKeydown);
 document.getElementById('startBtn').addEventListener('click', startQuestionnaire);
 document.getElementById('submitBtn').addEventListener('click', submitQuestionnaire);
 document.getElementById('resetBtn').addEventListener('click', reset);
