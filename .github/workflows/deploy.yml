@@ -19,10 +19,10 @@ jobs:
     environment: hetzner
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy via rsync over SSH
-        uses: easingthemes/ssh-deploy@v5
+        uses: easingthemes/ssh-deploy@v6
         with:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SSH_HOST }}
